@@ -1,23 +1,46 @@
+#!/bin/bash
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 local_ip=$(hostname -I | awk '{print $1}')
-echo -e "${GREEN}============================================================================${NC}"
-echo -e "${GREEN}==================== Script Install GenieACS All In One. ===================${NC}"
-echo -e "${GREEN}======================== NodeJS, MongoDB, GenieACS, ========================${NC}"
-echo -e "${GREEN}============================================================================${NC}"
-echo -e "${GREEN}Sebelum melanjutkan, silahkan baca terlebih dahulu. Apakah anda ingin melanjutkan? (y/n)${NC}"
+
+echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+echo -e "${GREEN}==============================================="
+echo -e "${GREEN}   Apakah Anda yakin menginstall GenieACS? (y/n)${NC}"
+echo -e "${GREEN}==============================================="
+echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
 read confirmation
+
 if [ "$confirmation" != "y" ]; then
-    echo -e "${GREEN}Install dibatalkan. Tidak ada perubahan dalam ubuntu server anda.${NC}"
+    echo -e "${GREEN}Install dibatalkan.${NC}"
+    /tmp/install.sh
     exit 1
 fi
-for ((i = 5; i >= 1; i--)); do
-	sleep 1
-    echo "Melanjutkan dalam $i. Tekan ctrl+c untuk membatalkan"
-done
 
-#Install NodeJS
+#MongoDB
+if ! sudo systemctl is-active --quiet mongod; then
+    curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+	echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+
+	sudo apt update
+	sudo apt install mongodb-org -y
+	sudo systemctl start mongod.service
+	sudo systemctl enable mongod
+else
+	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${RED}==============================================="
+    echo -e "${RED}     Mongodb sudah terinstall sebelumnya. ${NC}"
+	echo -e "${RED}==============================================="
+	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+fi
+
+sleep 3
+if ! sudo systemctl is-active --quiet mongod; then
+    sudo rm TR069_server/install.sh
+    exit 1
+fi
+
+#NodeJS Install
 check_node_version() {
     if command -v node > /dev/null 2>&1; then
         NODE_VERSION=$(node -v | cut -d 'v' -f 2)
@@ -35,38 +58,32 @@ check_node_version() {
 }
 
 if ! check_node_version; then
-    echo -e "${GREEN}================== Menginstall NodeJS ==================${NC}"
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - &&\
-    sudo apt-get install -y nodejs
-    echo -e "${GREEN}================== Sukses NodeJS ==================${NC}"
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - \
+	
+	sudo apt update
+	sudo apt-get install -y nodejs
+	npm install -g npm@11.1.0
+	sudo apt install unzip
+	
 else
     NODE_VERSION=$(node -v | cut -d 'v' -f 2)
-    echo -e "${GREEN}============================================================================${NC}"
-    echo -e "${GREEN}============== NodeJS sudah terinstall versi ${NODE_VERSION}. ==============${NC}"
-    echo -e "${GREEN}========================= Lanjut install GenieACS ==========================${NC}"
-fi
+    echo -e "${GREEN}NodeJS sudah terinstall versi ${NODE_VERSION}. ${NC}"
 
-#MongoDB
-if !  systemctl is-active --quiet mongod; then
-    echo -e "${GREEN}================== Menginstall MongoDB ==================${NC}"
-    wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-    sudo apt-get update
-    sudo apt-get install -y mongodb-org
-    systemctl start mongod.service
-    systemctl start mongod
-    systemctl enable mongod
-    mongo --eval 'db.runCommand({ connectionStatus: 1 })'
-    echo -e "${GREEN}================== Sukses MongoDB ==================${NC}"
-else
-    echo -e "${GREEN}============================================================================${NC}"
-    echo -e "${GREEN}=================== mongodb sudah terinstall sebelumnya. ===================${NC}"
+fi
+if ! check_node_version; then
+    sudo rm TR069_server/install.sh
+    exit 1
 fi
 
 #GenieACS
 if !  systemctl is-active --quiet genieacs-{cwmp,fs,ui,nbi}; then
-    echo -e "${GREEN}================== Menginstall genieACS CWMP, FS, NBI, UI ==================${NC}"
-    npm install -g genieacs@1.2.9
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${GREEN}==============================================="
+    echo -e "${GREEN}    Menginstall genieACS CWMP, FS, NBI, UI ${NC}"
+	echo -e "${GREEN}==============================================="
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	
+	npm install -g genieacs@1.2.13
     useradd --system --no-create-home --user-group genieacs || true
     mkdir -p /opt/genieacs
     mkdir -p /opt/genieacs/ext
@@ -156,17 +173,57 @@ EOF
     dateext
 }
 EOF
-    echo -e "${GREEN}========== Install APP GenieACS selesai... ==============${NC}"
-    systemctl daemon-reload
+    echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${GREEN}==============================================="
+	echo -e "${GREEN}       Install APP GenieACS selesai...    ${NC}"
+    echo -e "${GREEN}==============================================="
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	
+	systemctl daemon-reload
     systemctl enable --now genieacs-{cwmp,fs,ui,nbi}
-    systemctl start genieacs-{cwmp,fs,ui,nbi}    
-    echo -e "${GREEN}================== Sukses genieACS CWMP, FS, NBI, UI ==================${NC}"
+    systemctl start genieacs-{cwmp,fs,ui,nbi}
+	
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${GREEN}==============================================="
+    echo -e "${GREEN}       Sukses genieACS CWMP, FS, NBI, UI  ${NC}"
+	echo -e "${GREEN}==============================================="
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
 else
-    echo -e "${GREEN}============================================================================${NC}"
-    echo -e "${GREEN}=================== GenieACS sudah terinstall sebelumnya. ==================${NC}"
+    echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${RED}==============================================="
+	echo -e "${RED}     GenieACS sudah terinstall sebelumnya.${NC}"
+	echo -e "${RED}==============================================="
+	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
 fi
 
 #Sukses
-echo -e "${GREEN}============================================================================${NC}"
-echo -e "${GREEN}========== GenieACS UI akses port 3000. : http://$local_ip:3000 ============${NC}"
-echo -e "${GREEN}============================================================================${NC}"
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${GREEN}==============================================="
+	echo -e "${GREEN}          Sekarang install parameter.          "
+	echo -e "${GREEN}      Apakah anda ingin melanjutkan? (y/n)${NC}"
+	echo -e "${GREEN}==============================================="
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	read confirmation
+
+if [ "$confirmation" != "y" ]; then
+	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${RED}==============================================="
+    echo -e "${RED}           Install dibatalkan..           ${NC}"
+	echo -e "${RED}==============================================="
+	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
+    exit 1
+fi
+	
+	cp -ru genieacs /usr/lib/node_modules/
+	mongorestore --db genieacs --drop db-v2
+	
+#Sukses
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo -e "${GREEN}====================================================="
+	echo -e "${GREEN}       Akses GenieACS : http://$local_ip:3000   ${NC}"
+	echo -e "${GREEN}====================================================="
+	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+
+	sudo chmod -R 755 /usr/lib/node_modules/genieacs/bin/genieacs-{cwmp,ext,fs,ui,nbi}
+	sudo ufw allow 3000
+	sudo ufw allow 7547
