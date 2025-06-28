@@ -17,15 +17,19 @@ if [ "$confirmation" != "y" ]; then
     exit 1
 fi
 
+	sudo apt update
+	
 #MongoDB
 if ! sudo systemctl is-active --quiet mongod; then
     curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
 	echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 
-	sudo apt update
-	sudo apt install mongodb-org -y
-	sudo systemctl start mongod.service
+	sudo apt-get update
+	sudo apt-get install mongodb-org -y
+	sudo systemctl daemon-reload
 	sudo systemctl enable mongod
+	sudo systemctl start mongod
+
 else
 	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
 	echo -e "${RED}==============================================="
@@ -62,7 +66,7 @@ if ! check_node_version; then
 	
 	sudo apt update
 	sudo apt-get install -y nodejs
-	npm install -g npm@11.1.0
+	sudo npm install -g npm@11.1.0
 	sudo apt install unzip
 	
 else
@@ -179,9 +183,9 @@ EOF
     echo -e "${GREEN}==============================================="
 	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
 	
-	systemctl daemon-reload
-    systemctl enable --now genieacs-{cwmp,fs,ui,nbi}
-    systemctl start genieacs-{cwmp,fs,ui,nbi}
+	sudo systemctl daemon-reload
+    sudo systemctl enable --now genieacs-{cwmp,fs,ui,nbi}
+    sudo systemctl start genieacs-{cwmp,fs,ui,nbi}
 	
 	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
 	echo -e "${GREEN}==============================================="
