@@ -19,66 +19,6 @@ fi
 
 	sudo apt update
 	
-#MongoDB
-if ! sudo systemctl is-active --quiet mongod; then
-    curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-	echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-
-	sudo apt-get update
-	sudo apt-get install mongodb-org -y
-	sudo systemctl daemon-reload
-	sudo systemctl enable mongod
-	sudo systemctl start mongod
-
-else
-	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
-	echo -e "${RED}==============================================="
-    echo -e "${RED}     Mongodb sudah terinstall sebelumnya. ${NC}"
-	echo -e "${RED}==============================================="
-	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
-fi
-
-sleep 3
-if ! sudo systemctl is-active --quiet mongod; then
-    sudo rm TR069_server/install.sh
-    exit 1
-fi
-
-#NodeJS Install
-check_node_version() {
-    if command -v node > /dev/null 2>&1; then
-        NODE_VERSION=$(node -v | cut -d 'v' -f 2)
-        NODE_MAJOR_VERSION=$(echo $NODE_VERSION | cut -d '.' -f 1)
-        NODE_MINOR_VERSION=$(echo $NODE_VERSION | cut -d '.' -f 2)
-
-        if [ "$NODE_MAJOR_VERSION" -lt 12 ] || { [ "$NODE_MAJOR_VERSION" -eq 12 ] && [ "$NODE_MINOR_VERSION" -lt 13 ]; } || [ "$NODE_MAJOR_VERSION" -gt 22 ]; then
-            return 1
-        else
-            return 0
-        fi
-    else
-        return 1
-    fi
-}
-
-if ! check_node_version; then
-    curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - \
-	
-	sudo apt update
-	sudo apt-get install -y nodejs
-	sudo npm install -g npm@11.1.0
-	sudo apt install unzip
-	
-else
-    NODE_VERSION=$(node -v | cut -d 'v' -f 2)
-    echo -e "${GREEN}NodeJS sudah terinstall versi ${NODE_VERSION}. ${NC}"
-
-fi
-if ! check_node_version; then
-    sudo rm TR069_server/install.sh
-    exit 1
-fi
-
 #GenieACS
 if !  systemctl is-active --quiet genieacs-{cwmp,fs,ui,nbi}; then
 	echo -e "${GREEN}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
