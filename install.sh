@@ -38,6 +38,11 @@ else
 	echo -e "${RED}==============================================="
 	echo -e "${RED}<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>"
 fi
+sleep 3
+if ! sudo systemctl is-active --quiet mongod; then
+    sudo rm TR069_server/install.sh
+    exit 1
+fi
 
 #NodeJS Install
 check_node_version() {
@@ -67,6 +72,11 @@ if ! check_node_version; then
 else
     NODE_VERSION=$(node -v | cut -d 'v' -f 2)
     echo -e "${GREEN}NodeJS sudah terinstall versi ${NODE_VERSION}. ${NC}"
+fi
+sleep 3
+if ! check_node_version; then
+    sudo rm TR069_server/install.sh
+    exit 1
 fi
 
 #GenieACS
